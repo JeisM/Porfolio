@@ -3,7 +3,7 @@ export const portfolio = {
   title: 'Front-End Developer',
   location: 'Marikina City, Philippines',
   phone: '09064906419',
-  email: 'johnybravo15@yahoo.com',
+  email: 'johnm4rkrosales@gmail.com',
   summary:
     'Front-End Developer with 4+ years of experience delivering responsive web applications for enterprise clients in healthcare, energy, banking, and real estate. Experienced in reusable UI components, design-to-code implementation, REST/GraphQL integration, and SaaS customization. Skilled in React, Next.js, TypeScript, JavaScript, and Angular, with experience in testing, accessibility, and collaborative UI/UX delivery.',
   skills: [

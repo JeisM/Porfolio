@@ -29,9 +29,11 @@ describe('App', () => {
   it('uses the system preference and persists an explicit theme choice', () => {
     window.matchMedia = vi.fn().mockReturnValue({ matches: true, addListener: vi.fn(), removeListener: vi.fn() });
     render(<App />);
+    expect(document.documentElement).toHaveAttribute('data-color-mode', 'dark');
     const toggle = screen.getAllByRole('button', { name: 'Switch to light mode' })[0];
     fireEvent.click(toggle);
     expect(storage.getItem('portfolio-color-mode')).toBe('light');
+    expect(document.documentElement).toHaveAttribute('data-color-mode', 'light');
   });
 
   it('bounces the main content when a navigation link is clicked', () => {

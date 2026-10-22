@@ -145,6 +145,13 @@ export function App() {
   }, [mode]);
 
   useEffect(() => {
+    document.documentElement.dataset.colorMode = mode;
+    return () => {
+      delete document.documentElement.dataset.colorMode;
+    };
+  }, [mode]);
+
+  useEffect(() => {
     if (!window.IntersectionObserver) return undefined;
     const sections = nav
       .map(([, id]) => document.getElementById(id))
