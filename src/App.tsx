@@ -224,7 +224,7 @@ export function App() {
                   <span><PhoneOutlined /> {portfolio.phone}</span>
                   <span><EmailOutlined /> {portfolio.email}</span>
                 </Stack>
-                <Button component="a" href={`mailto:${portfolio.email}`} variant="contained" startIcon={<EmailOutlined />}>Get in touch</Button>
+                <Button className="shine-button" component="a" href={`mailto:${portfolio.email}`} variant="contained" startIcon={<EmailOutlined />}><span>Get in touch</span></Button>
               </Box>
               <Typography className="hero-statement">Building modern web experiences with clean code and thoughtful design.</Typography>
             </Box>

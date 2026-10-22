@@ -24,6 +24,7 @@ describe('App', () => {
     expect(screen.getByRole('heading', { name: 'John Mark Rosales' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Professional Experience' })).toBeInTheDocument();
     expect(screen.getByText('Australian Health Insurance')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Get in touch' })).toHaveClass('shine-button');
   });
 
   it('uses the system preference and persists an explicit theme choice', () => {
