@@ -51,6 +51,13 @@ describe('portfolio slideshow', () => {
       fireEvent.click(target);
       expect(target).toHaveAttribute('aria-current', 'page');
       expect((target as HTMLElement).style.getPropertyValue('--nav-x')).toBe('50%');
+      expect(target).toHaveAttribute('data-distance', '0');
+      const links = [...container.querySelectorAll<HTMLAnchorElement>('.arc-navigation a')];
+      for (const distance of [1, 2, 3]) {
+        const neighbor = links.find((link) => link.dataset.distance === String(distance));
+        expect(neighbor).toBeDefined();
+        expect(Number(neighbor!.style.getPropertyValue('--nav-icon-scale'))).toBeLessThan(Number(target.style.getPropertyValue('--nav-icon-scale')));
+      }
       expect(screen.getByRole('heading', { name: heading })).toBeInTheDocument();
       expect(container.querySelectorAll('main section')).toHaveLength(1);
       expect(container.querySelector('.weather-scene')).toHaveClass(`scene-${scene}`);

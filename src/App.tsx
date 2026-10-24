@@ -138,10 +138,6 @@ function sectionFromHash(): SectionId {
   return nav.find(([, id]) => `#${id}` === window.location.hash)?.[1] ?? nav[0][1];
 }
 
-function arcY(x: number) {
-  return 18 + 72 * (1 - ((x - 500) / 500) ** 2);
-}
-
 function Section({ id, title, icon, children }: { id: string; title: string; icon: ReactNode; children: ReactNode }) {
   return (
     <section id={`${id}-slide`} className="slide-body" aria-labelledby={`${id}-title`}>
@@ -269,11 +265,13 @@ export function App() {
           {nav.map(([label, id, Icon], index) => {
             const slot = (index - activeIndex + nav.length + Math.floor(nav.length / 2)) % nav.length;
             const position = (slot + 0.5) / nav.length;
+            const distance = Math.abs(slot - Math.floor(nav.length / 2));
             return (
               <a key={id} href={`#${id}`} className={`arc-link${activeSection === id ? ' active' : ''}`}
                 aria-current={activeSection === id ? 'page' : undefined}
                 aria-label={label}
-                style={{ '--nav-x': `${position * 100}%`, '--nav-y': `${(arcY(position * 1000) + 32) / 1.6}%` } as CSSProperties}
+                data-distance={distance}
+                style={{ '--nav-x': `${position * 100}%`, '--nav-distance': distance, '--nav-icon-scale': [2.3, 1.55, 1, 0.7][distance], '--nav-label-scale': [1.5, 1.12, 0.98, 0.84][distance] } as CSSProperties}
                 onClick={(event) => { event.preventDefault(); selectSection(id); }}
                 onKeyDown={(event) => {
                   let next = index;
