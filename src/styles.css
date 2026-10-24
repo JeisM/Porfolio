@@ -224,8 +224,6 @@ button, a { -webkit-tap-highlight-color: transparent; }
   .skills-grid, .project-list { grid-template-columns: 1fr; }
   .slide-copy .degree { font-size: 23px; }
   .experience-heading h2 { font-size: 20px; }
-  .cv-profile { align-items: flex-start; flex-direction: column; }
-  .cv-profile address { max-width: 100%; justify-content: flex-start; }
   .cv-columns, .social-grid { grid-template-columns: 1fr; }
   .social-intro { font-size: 14px; margin-bottom: 16px; }
   .social-grid { gap: 12px; }
@@ -306,6 +304,10 @@ button, a { -webkit-tap-highlight-color: transparent; }
   .cv-complete .cv-project .cv-technologies { font-size: 12px; margin-top: 6px; }
   .cv-complete .cv-skills > div + div { margin-top: 14px; }
   .cv-complete .cv-education { margin-top: 20px; padding-top: 18px; }
+}
+@media (max-width: 851px) {
+  .cv-profile { align-items: flex-start; flex-direction: column; }
+  .cv-profile address { max-width: 100%; flex-direction: column; align-items: flex-start; justify-content: flex-start; gap: 6px; }
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
