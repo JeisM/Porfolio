@@ -4,6 +4,16 @@ export const portfolio = {
   location: 'Marikina City, Philippines',
   phone: '09064906419',
   email: 'johnm4rkrosales@gmail.com',
+  experience: {
+    company: 'Accenture Philippines',
+    role: 'Front-End Developer / Software Engineer',
+    period: 'August 2021 – May 2026',
+  },
+  education: {
+    degree: 'Bachelor of Science in Information Technology',
+    school: 'ICCT Colleges, Cainta, Philippines',
+    period: 'March 2012 – March 2016',
+  },
   summary:
     'Front-End Developer with 4+ years of experience delivering responsive web applications for enterprise clients in healthcare, energy, banking, and real estate. Experienced in reusable UI components, design-to-code implementation, REST/GraphQL integration, and SaaS customization. Skilled in React, Next.js, TypeScript, JavaScript, and Angular, with experience in testing, accessibility, and collaborative UI/UX delivery.',
   skills: [
@@ -42,3 +52,11 @@ export const portfolio = {
     },
   ],
 } as const;
+
+// Demonstration profiles, ready to replace with the owner's actual accounts.
+export const socialProfiles = [
+  { platform: 'linkedin', label: 'LinkedIn', handle: 'your-linkedin-username', url: 'https://www.linkedin.com/in/your-linkedin-username/' },
+  { platform: 'facebook', label: 'Facebook', handle: 'your.facebook.username', url: 'https://www.facebook.com/your.facebook.username' },
+  { platform: 'instagram', label: 'Instagram', handle: '@your.instagram.username', url: 'https://www.instagram.com/your.instagram.username/' },
+  { platform: 'twitter', label: 'Twitter / X', handle: '@your_x_username', url: 'https://x.com/your_x_username' },
+] as const;
