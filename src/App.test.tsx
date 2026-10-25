@@ -3,6 +3,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { App } from './App';
 import { portfolio } from './portfolio';
 
+function renderWithNavigation() {
+  const result = render(<App />);
+  fireEvent.click(screen.getByRole('button', { name: /^Show navigation/ }));
+  return result;
+}
+
 describe('portfolio slideshow', () => {
   const stored = new Map<string, string>();
   const storage: Storage = {
@@ -24,8 +30,71 @@ describe('portfolio slideshow', () => {
   });
   afterEach(() => { cleanup(); vi.restoreAllMocks(); });
 
-  it('starts with CV Summary and opens the profile through Home', () => {
+  it('hides the Summary heading and icon only while navigation is closed', () => {
+    render(<App />);
+    const summary = screen.getByRole('region', { name: 'CV Summary' });
+    expect(summary.querySelector('.slide-heading')).not.toBeInTheDocument();
+    expect(screen.getByText(portfolio.name)).toBeVisible();
+    fireEvent.click(screen.getByRole('button', { name: /^Show navigation/ }));
+    expect(screen.getByRole('heading', { name: 'CV Summary', level: 1 })).toBeVisible();
+    expect(summary.querySelector('.section-icon')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Hide navigation' }));
+    expect(summary.querySelector('.slide-heading')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Next slide' }));
+    expect(screen.getByRole('heading', { name: portfolio.name, level: 1 })).toBeVisible();
+    fireEvent.click(screen.getByRole('button', { name: 'Next slide' }));
+    expect(screen.getByRole('heading', { name: 'Professional Summary', level: 1 })).toBeVisible();
+    expect(screen.getByRole('button', { name: /^Show navigation/ })).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('starts with navigation hidden while keeping the selected section and footer controls available', () => {
+    window.history.replaceState(null, '', '/#skills');
     const { container } = render(<App />);
+    const toggle = screen.getByRole('button', { name: 'Show navigation, current section Skills' });
+    expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    expect(toggle).toHaveAttribute('aria-controls', 'portfolio-navigation');
+    expect(screen.queryByRole('navigation')).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Home' })).not.toBeInTheDocument();
+    expect(container.querySelector('#portfolio-navigation')).toHaveAttribute('inert');
+    expect(screen.getByRole('heading', { name: 'Technical Skills' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Next slide' }));
+    expect(screen.getByRole('heading', { name: 'Professional Experience' })).toBeInTheDocument();
+    expect(toggle).toHaveAttribute('aria-label', 'Show navigation, current section Experience');
+    expect(toggle).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('keeps navigation open after selecting sections and closes only on request', () => {
+    renderWithNavigation();
+    const toggle = screen.getByRole('button', { name: 'Hide navigation' });
+    expect(toggle).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.getByRole('link', { name: 'Summary' })).toHaveFocus();
+    for (const label of ['Home', 'About', 'Skills', 'Experience', 'Education', 'Social', 'Summary']) {
+      fireEvent.click(screen.getByRole('link', { name: label }));
+      expect(screen.getByRole('link', { name: label })).toHaveAttribute('aria-current', 'page');
+      expect(screen.getByRole('navigation')).toBeVisible();
+      expect(toggle).toHaveAttribute('aria-expanded', 'true');
+    }
+    fireEvent.click(toggle);
+    expect(screen.queryByRole('navigation')).not.toBeInTheDocument();
+    expect(toggle).toHaveFocus();
+    fireEvent.click(toggle);
+    expect(screen.getByRole('link', { name: 'Summary' })).toHaveFocus();
+  });
+
+  it('closes navigation with Escape and restores focus to the toggle', () => {
+    window.history.replaceState(null, '', '/#education');
+    renderWithNavigation();
+    const current = screen.getByRole('link', { name: 'Education' });
+    expect(current).toHaveFocus();
+    fireEvent.keyDown(current, { key: 'Escape' });
+    const toggle = screen.getByRole('button', { name: 'Show navigation, current section Education' });
+    expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    expect(toggle).toHaveFocus();
+    expect(screen.getByRole('heading', { name: 'Education' })).toBeInTheDocument();
+  });
+
+  it('starts with CV Summary and opens the profile through Home', () => {
+    const { container } = renderWithNavigation();
     expect(screen.getByRole('heading', { name: 'CV Summary', level: 1 })).toBeInTheDocument();
     expect([...container.querySelectorAll('.arc-navigation a')].map((link) => link.getAttribute('aria-label'))).toEqual(['Summary', 'Home', 'About', 'Skills', 'Experience', 'Education', 'Social']);
     fireEvent.click(screen.getByRole('link', { name: 'Home' }));
@@ -36,7 +105,7 @@ describe('portfolio slideshow', () => {
   });
 
   it('replaces the slide, centers the selection, and changes weather for every section', () => {
-    const { container } = render(<App />);
+    const { container } = renderWithNavigation();
     const sections = [
       ['Summary', 'CV Summary', 'clouds', '01'],
       ['Home', 'John Mark Rosales', 'sunny', '02'],
@@ -66,7 +135,7 @@ describe('portfolio slideshow', () => {
   });
 
   it('keeps CV projects and skill groups available in their slides', () => {
-    render(<App />);
+    renderWithNavigation();
     fireEvent.click(screen.getByRole('link', { name: 'Experience' }));
     expect(screen.getByText('Australian Health Insurance')).toBeInTheDocument();
     expect(screen.getByText('Japanese Real Estate Project')).toBeInTheDocument();
@@ -81,7 +150,7 @@ describe('portfolio slideshow', () => {
 
   it('opens deep links and responds to history navigation', () => {
     window.history.replaceState(null, '', '/#skills');
-    render(<App />);
+    renderWithNavigation();
     expect(screen.getByRole('heading', { name: 'Technical Skills' })).toBeInTheDocument();
     window.history.replaceState(null, '', '/#education');
     fireEvent(window, new PopStateEvent('popstate'));
@@ -90,7 +159,7 @@ describe('portfolio slideshow', () => {
   });
 
   it('supports keyboard navigation and wraps between the first and last slide', () => {
-    render(<App />);
+    renderWithNavigation();
     const summary = screen.getByRole('link', { name: 'Summary' });
     summary.focus();
     fireEvent.keyDown(summary, { key: 'ArrowLeft' });
@@ -103,7 +172,7 @@ describe('portfolio slideshow', () => {
   });
 
   it('pauses weather across section changes and resumes on request', () => {
-    const { container } = render(<App />);
+    const { container } = renderWithNavigation();
     fireEvent.click(screen.getByRole('button', { name: 'Pause weather animation' }));
     expect(container.querySelector('.weather-scene')).toHaveClass('is-paused');
     fireEvent.click(screen.getByRole('link', { name: 'Experience' }));
@@ -114,7 +183,7 @@ describe('portfolio slideshow', () => {
 
   it('moves between Education and Experience with footer buttons and directional transitions', () => {
     window.history.replaceState(null, '', '/#education');
-    render(<App />);
+    renderWithNavigation();
     const previous = screen.getByRole('button', { name: 'Previous slide' });
     previous.focus();
     fireEvent.click(previous);
@@ -132,7 +201,7 @@ describe('portfolio slideshow', () => {
     let time = 1000;
     vi.spyOn(Date, 'now').mockImplementation(() => time);
     window.history.replaceState(null, '', '/#education');
-    render(<App />);
+    renderWithNavigation();
     fireEvent.wheel(screen.getByRole('region', { name: 'Slide content' }), { deltaY: -100 });
     expect(screen.getByRole('heading', { name: 'Professional Experience' })).toBeInTheDocument();
     time += 50;
@@ -153,7 +222,7 @@ describe('portfolio slideshow', () => {
   it('scrolls long content normally and changes slides only on a fresh gesture at its top or bottom', () => {
     let time = 1000;
     vi.spyOn(Date, 'now').mockImplementation(() => time);
-    render(<App />);
+    renderWithNavigation();
     const setScrollable = (top: number) => {
       const region = screen.getByRole('region', { name: 'Slide content' });
       Object.defineProperties(region, { clientHeight: { configurable: true, value: 200 }, scrollHeight: { configurable: true, value: 600 }, scrollTop: { configurable: true, writable: true, value: top } });
@@ -184,7 +253,7 @@ describe('portfolio slideshow', () => {
 
   it('ignores pinch zoom and horizontal wheel gestures and supports line-based mouse wheels', () => {
     window.history.replaceState(null, '', '/#about');
-    render(<App />);
+    renderWithNavigation();
     const region = screen.getByRole('region', { name: 'Slide content' });
     fireEvent.wheel(region, { deltaY: 100, ctrlKey: true });
     fireEvent.wheel(region, { deltaY: 10, deltaX: 100 });
@@ -195,7 +264,7 @@ describe('portfolio slideshow', () => {
 
   it('puts all CV information together in one slide using the existing data', () => {
     window.history.replaceState(null, '', '/#cv');
-    const { container } = render(<App />);
+    const { container } = renderWithNavigation();
     expect(screen.getByRole('heading', { name: 'CV Summary', level: 1 })).toBeInTheDocument();
     expect(screen.getByText(portfolio.name)).toBeInTheDocument();
     expect(screen.getByText(portfolio.email)).toBeInTheDocument();
@@ -211,7 +280,7 @@ describe('portfolio slideshow', () => {
 
   it('shows supplied social profiles and contact actions without placeholder accounts', () => {
     window.history.replaceState(null, '', '/#social');
-    render(<App />);
+    renderWithNavigation();
     expect(screen.getByRole('link', { name: `Email ${portfolio.email}` })).toHaveAttribute('href', `mailto:${portfolio.email}`);
     expect(screen.getByRole('link', { name: `Phone ${portfolio.phone}` })).toHaveAttribute('href', `tel:${portfolio.phone}`);
     const facebook = screen.getByRole('link', { name: 'Facebook (opens in a new tab)' });
@@ -234,7 +303,7 @@ describe('portfolio slideshow', () => {
     window.innerWidth = 390;
     window.innerHeight = 844;
     window.history.replaceState(null, '', '/#cv');
-    render(<App />);
+    renderWithNavigation();
     expect(screen.queryByRole('button', { name: 'Previous CV page' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Next CV page' })).not.toBeInTheDocument();
     expect(screen.getByText(portfolio.summary)).toBeInTheDocument();
@@ -245,14 +314,14 @@ describe('portfolio slideshow', () => {
 
   it('starts paused when reduced motion is requested', () => {
     window.matchMedia = vi.fn().mockImplementation((query: string) => ({ matches: query.includes('reduced-motion'), addEventListener: vi.fn(), removeEventListener: vi.fn() }));
-    const { container } = render(<App />);
+    const { container } = renderWithNavigation();
     expect(container.querySelector('.weather-scene')).toHaveClass('is-paused');
     expect(screen.getByRole('button', { name: 'Play weather animation' })).toBeInTheDocument();
   });
 
   it('uses the system color preference and persists a theme change', () => {
     window.matchMedia = vi.fn().mockImplementation((query: string) => ({ matches: query.includes('color-scheme'), addEventListener: vi.fn(), removeEventListener: vi.fn() }));
-    render(<App />);
+    renderWithNavigation();
     expect(document.documentElement).toHaveAttribute('data-color-mode', 'dark');
     fireEvent.click(screen.getByRole('button', { name: 'Switch to light mode' }));
     expect(storage.getItem('portfolio-color-mode')).toBe('light');

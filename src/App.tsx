@@ -2,6 +2,7 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, typ
 import { flushSync } from 'react-dom';
 import ChevronLeftRounded from '@mui/icons-material/ChevronLeftRounded';
 import ChevronRightRounded from '@mui/icons-material/ChevronRightRounded';
+import ExpandLessRounded from '@mui/icons-material/ExpandLessRounded';
 import { useSlideWheel } from './useSlideWheel';
 import { useSlideSwipe } from './useSlideSwipe';
 import PauseRounded from '@mui/icons-material/PauseRounded';
@@ -73,13 +74,13 @@ function sectionFromHash(): SectionId {
   return nav.find(([, id]) => `#${id}` === window.location.hash)?.[1] ?? nav[0][1];
 }
 
-function Section({ id, title, icon, children }: { id: string; title: string; icon: ReactNode; children: ReactNode }) {
+function Section({ id, title, icon, children, hideHeading = false }: { id: string; title: string; icon: ReactNode; children: ReactNode; hideHeading?: boolean }) {
   return (
-    <section id={`${id}-slide`} className="slide-body" aria-labelledby={`${id}-title`}>
-      <div className="slide-heading">
+    <section id={`${id}-slide`} className="slide-body" aria-labelledby={hideHeading ? undefined : `${id}-title`} aria-label={hideHeading ? title : undefined}>
+      {!hideHeading && <div className="slide-heading">
         <div className="section-icon">{icon}</div>
         <Typography id={`${id}-title`} component="h1">{title}</Typography>
-      </div>
+      </div>}
       <div className="slide-copy">{children}</div>
     </section>
   );
@@ -87,10 +88,13 @@ function Section({ id, title, icon, children }: { id: string; title: string; ico
 
 export function App() {
   const [mode, setMode] = useState<Mode>(getInitialMode);
+  const [navigationOpen, setNavigationOpen] = useState(false);
   const [activeSection, setActiveSection] = useState<SectionId>(sectionFromHash);
   const [direction, setDirection] = useState<'next' | 'previous'>('next');
   const [panelMotion, setPanelMotion] = useState<'none' | 'css' | 'native'>('none');
   const shellRef = useRef<HTMLDivElement>(null);
+  const navigationRef = useRef<HTMLElement>(null);
+  const navigationToggleRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const transitionRef = useRef<ViewTransition | null>(null);
@@ -99,6 +103,15 @@ export function App() {
   const [motionPaused, setMotionPaused] = useState(() => window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false);
   const activeIndex = nav.findIndex(([, id]) => id === activeSection);
   const weather = scenes[activeSection];
+
+  useLayoutEffect(() => {
+    if (navigationOpen) navigationRef.current?.querySelector<HTMLAnchorElement>('[aria-current="page"]')?.focus({ preventScroll: true });
+  }, [navigationOpen]);
+
+  const closeNavigation = () => {
+    setNavigationOpen(false);
+    navigationToggleRef.current?.focus({ preventScroll: true });
+  };
 
   useLayoutEffect(() => {
     if (pendingFocus.current) {
@@ -188,8 +201,22 @@ export function App() {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <div ref={shellRef} className={`site-shell mode-${mode}`}>
+      <div ref={shellRef} className={`site-shell mode-${mode}`} data-navigation={navigationOpen ? 'open' : 'closed'}
+        onKeyDown={(event) => {
+          if (event.key === 'Escape' && navigationOpen) { event.preventDefault(); closeNavigation(); }
+        }}>
         <WeatherScene scene={weather.scene} paused={motionPaused} />
+        <button ref={navigationToggleRef} type="button" className="navigation-toggle"
+          aria-controls="portfolio-navigation" aria-expanded={navigationOpen}
+          aria-label={navigationOpen ? 'Hide navigation' : `Show navigation, current section ${nav[activeIndex][0]}`}
+          title={navigationOpen ? 'Hide sections' : 'Show sections'}
+          onClick={() => navigationOpen ? closeNavigation() : setNavigationOpen(true)}>
+          {navigationOpen ? <ExpandLessRounded aria-hidden="true" /> : (
+            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              {[6, 12, 18].flatMap((y) => [6, 12, 18].map((x) => <circle key={`${x}-${y}`} cx={x} cy={y} r="1.8" />))}
+            </svg>
+          )}
+        </button>
         <div className="view-controls">
           <IconButton className="view-control" onClick={() => setMotionPaused((value) => !value)} aria-label={motionPaused ? 'Play weather animation' : 'Pause weather animation'} title={motionPaused ? 'Play weather animation' : 'Pause weather animation'}>
             {motionPaused ? <PlayArrowRounded /> : <PauseRounded />}
@@ -199,7 +226,8 @@ export function App() {
           </IconButton>
         </div>
 
-        <nav className="arc-navigation" aria-label="Portfolio sections" style={{ '--nav-count': nav.length } as CSSProperties}>
+        <nav ref={navigationRef} id="portfolio-navigation" className="arc-navigation" aria-label="Portfolio sections"
+          aria-hidden={!navigationOpen} inert={!navigationOpen} style={{ '--nav-count': nav.length } as CSSProperties}>
           <svg className="nav-paint" width="0" height="0" aria-hidden="true" focusable="false">
             <defs>
               <linearGradient id="portfolio-navigation-ink" x1="0" y1="0" x2=".7" y2="1">
@@ -299,7 +327,7 @@ export function App() {
                 </Section>
               )}
               {activeSection === 'cv' && (
-                <Section id="cv" title="CV Summary" icon={<DescriptionOutlined />}><CvOverview /></Section>
+                <Section id="cv" title="CV Summary" icon={<DescriptionOutlined />} hideHeading={!navigationOpen}><CvOverview /></Section>
               )}
               {activeSection === 'social' && (
                 <Section id="social" title="Social Media" icon={<ShareOutlined />}><SocialLinks /></Section>

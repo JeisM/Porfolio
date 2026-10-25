@@ -42,9 +42,9 @@
   <main>
     <header>
       <div>
-        <div class="eyebrow">Interactive concept / 02</div>
+        <div class="eyebrow">Interactive concept / 03</div>
         <h1>Navigation, on demand.</h1>
-        <p>A small glass button keeps every section within reach. Hide the navigation to give your photo, experience, and skills more room.</p>
+        <p>The glass toggle stays in the upper-left. Tap the grid to show your sections or the chevron to hide them.</p>
       </div>
       <span class="badge">Design preview</span>
     </header>
@@ -64,9 +64,9 @@
     </div>
     <div class="notes">
       <div><strong id="space-gain">Loading preview…</strong><div id="status" role="status" aria-live="polite"></div></div>
-      <div>Choose a section to return to focus view.<br>Escape closes the navigation. Previous / Next stays available.</div>
+      <div>Navigation stays open when you choose a section.<br>Use the upper-left chevron or Escape to close it.</div>
     </div>
-    <footer>Separate design mockup · Your app's navigation has not been changed.</footer>
+    <footer>Design reference · This navigation toggle is now implemented in the portfolio.</footer>
   </main>
   <script>
     const frame = document.getElementById('portfolio-preview');
@@ -88,12 +88,9 @@
     function syncLabel() {
       if (!toggle) return;
       const name = nav.querySelector('[aria-current="page"]')?.getAttribute('aria-label') || 'Summary';
-      toggle.querySelector('.toggle-text').textContent = collapsed ? 'Sections' : 'Hide sections';
-      const current = toggle.querySelector('.toggle-current');
-      current.textContent = name;
-      current.hidden = !collapsed;
       toggle.setAttribute('aria-expanded', String(!collapsed));
       toggle.setAttribute('aria-label', collapsed ? `Show navigation, current section ${name}` : 'Hide navigation');
+      toggle.title = collapsed ? 'Show sections' : 'Hide sections';
       themeView.textContent = frame.contentDocument.documentElement.dataset.colorMode === 'dark' ? 'Try light mode' : 'Try dark mode';
     }
 
@@ -102,6 +99,7 @@
       const region = shell.querySelector('.slide-enter');
       shell.dataset.previewNavigation = 'open';
       nav.hidden = false;
+      nav.setAttribute('aria-hidden', 'false');
       const openHeight = region.clientHeight;
       shell.dataset.previewNavigation = 'closed';
       nav.hidden = true;
@@ -109,6 +107,7 @@
       shell.dataset.previewNavigation = collapsed ? 'closed' : 'open';
       nav.hidden = collapsed;
       nav.inert = collapsed;
+      nav.setAttribute('aria-hidden', String(collapsed));
       gain.textContent = `+${Math.max(0, closedHeight - openHeight)}px of reading space in focus view`;
     }
 
@@ -143,35 +142,30 @@
       const style = doc.createElement('style');
       style.id = 'navigation-concept-styles';
       style.textContent = `
-        .site-shell[data-preview-navigation='closed'] { padding-top: 58px; }
+        body { min-width: 0; }
+        .navigation-toggle { display: none; }
+        .site-shell, .arc-navigation { transition: none; }
+        .site-shell[data-preview-navigation='closed'] { padding-top: 62px; }
         .site-shell[data-preview-navigation='closed'] .arc-navigation { display: none; }
-        .preview-toggle { position: absolute; z-index: 8; top: 12px; left: 18px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 34px; max-width: calc(100% - 90px); padding: 0 12px; border: 1px solid rgba(255,255,255,.85); border-radius: 999px; background: linear-gradient(140deg, rgba(255,255,255,.75), rgba(197,231,255,.48)); color: #164467; box-shadow: inset 0 1px 1px rgba(255,255,255,.95), 0 4px 15px rgba(28,65,102,.13); backdrop-filter: blur(16px) saturate(1.4); -webkit-backdrop-filter: blur(16px) saturate(1.4); font: 650 12px/1.2 Inter, 'Segoe UI', sans-serif; cursor: pointer; }
-        .preview-toggle::before { content: ''; position: absolute; inset: -5px; border-radius: inherit; }
-        .preview-toggle svg { flex: 0 0 auto; width: 16px; height: 16px; }
-        .preview-toggle .toggle-current { padding-left: 8px; border-left: 1px solid rgba(31,88,125,.22); font-size: 11px; font-weight: 500; }
-        .preview-toggle .toggle-current[hidden] { display: none; }
-        .toggle-chevron { width: 13px !important; height: 13px !important; transition: transform .2s; }
-        .preview-toggle[aria-expanded='true'] .toggle-chevron { transform: rotate(180deg); }
-        .preview-toggle:hover { background: rgba(245,252,255,.92); }
+        .preview-toggle { position: absolute; z-index: 8; top: 10px; left: 12px; display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; padding: 0; border: 1px solid rgba(255,255,255,.85); border-radius: 50%; background: linear-gradient(140deg, rgba(255,255,255,.75), rgba(197,231,255,.48)); color: #164467; box-shadow: inset 0 1px 1px rgba(255,255,255,.95), 0 4px 15px rgba(28,65,102,.13); backdrop-filter: blur(16px) saturate(1.4); -webkit-backdrop-filter: blur(16px) saturate(1.4); cursor: pointer; transition: background .2s, box-shadow .2s; }
+        .preview-toggle::before { content: ''; position: absolute; inset: -7px; border-radius: inherit; }
+
+        .preview-toggle svg { flex: 0 0 auto; width: 16.5px; height: 16.5px; }
+        .preview-toggle .toggle-chevron { display: none; }
+        .preview-toggle[aria-expanded='true'] .toggle-grid { display: none; }
+        .preview-toggle[aria-expanded='true'] .toggle-chevron { display: block; }
+        .preview-toggle:hover { background: rgba(245,252,255,.92); box-shadow: inset 0 1px 1px rgba(255,255,255,.95), 0 5px 18px rgba(28,65,102,.22); }
         .preview-toggle:focus-visible { outline: 2px solid #0766b6; outline-offset: 3px; }
         .mode-dark .preview-toggle { color: #e2f3ff; border-color: rgba(210,239,255,.6); background: linear-gradient(140deg, rgba(158,216,255,.28), rgba(43,82,132,.5)); box-shadow: inset 0 1px 1px rgba(225,246,255,.5), 0 4px 15px rgba(4,18,45,.25); }
-        .mode-dark .preview-toggle .toggle-current { border-color: rgba(210,239,255,.3); }
         .mode-dark .preview-toggle:hover { background: rgba(77,130,181,.65); }
         .mode-dark .preview-toggle:focus-visible { outline-color: #a1e8ff; }
         @media(max-width: 900px) {
-          .site-shell[data-preview-navigation='open'], .site-shell[data-preview-navigation='closed'] { padding-top: 52px; }
-          .preview-toggle { top: 9px; left: 12px; }
+          .site-shell[data-preview-navigation='open'] { padding-top: 58px; }
         }
         @media(max-height: 500px) and (min-width: 480px) and (orientation: landscape) {
           .site-shell[data-preview-navigation='open'] { padding-top: 6px; }
-          .site-shell[data-preview-navigation='closed'] { padding-top: 46px; }
-          .preview-toggle { top: 7px; left: 12px; }
-          .site-shell[data-preview-navigation='open'] .preview-toggle { width: 32px; min-height: 32px; padding: 0; }
-          .site-shell[data-preview-navigation='open'] .toggle-text,
-          .site-shell[data-preview-navigation='open'] .toggle-current,
-          .site-shell[data-preview-navigation='open'] .toggle-chevron { display: none; }
         }
-        @media(prefers-reduced-motion: reduce) { .preview-toggle * { transition: none; } }
+        @media(prefers-reduced-motion: reduce) { .preview-toggle { transition: none; } }
       `;
       doc.head.appendChild(style);
       toggle = doc.createElement('button');
@@ -179,12 +173,9 @@
       toggle.className = 'preview-toggle';
       toggle.type = 'button';
       toggle.setAttribute('aria-controls', nav.id);
-      toggle.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg><span class="toggle-text">Sections</span><span class="toggle-current">Summary</span><svg class="toggle-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="m7 10 5 5 5-5"/></svg>';
+      toggle.innerHTML = '<svg class="toggle-grid" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="6" cy="6" r="1.8"/><circle cx="12" cy="6" r="1.8"/><circle cx="18" cy="6" r="1.8"/><circle cx="6" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="18" cy="12" r="1.8"/><circle cx="6" cy="18" r="1.8"/><circle cx="12" cy="18" r="1.8"/><circle cx="18" cy="18" r="1.8"/></svg><svg class="toggle-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m7 14 5-5 5 5"/></svg>';
       toggle.addEventListener('click', () => setCollapsed(!collapsed));
       shell.appendChild(toggle);
-      nav.addEventListener('click', event => {
-        if (event.target.closest('a')) setTimeout(() => setCollapsed(true, true), 0);
-      });
       doc.addEventListener('keydown', event => {
         if (event.key === 'Escape' && !collapsed) { event.preventDefault(); setCollapsed(true, true); }
       });
