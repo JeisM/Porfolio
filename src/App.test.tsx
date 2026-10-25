@@ -54,7 +54,7 @@ describe('portfolio slideshow', () => {
     expect(toggle).toHaveAttribute('aria-expanded', 'false');
     expect(toggle).toHaveAttribute('aria-controls', 'portfolio-navigation');
     expect(screen.queryByRole('navigation')).not.toBeInTheDocument();
-    expect(screen.queryByRole('link', { name: 'Home' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Profile' })).not.toBeInTheDocument();
     expect(container.querySelector('#portfolio-navigation')).toHaveAttribute('inert');
     expect(screen.getByRole('heading', { name: 'Technical Skills' })).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Next slide' }));
@@ -68,7 +68,7 @@ describe('portfolio slideshow', () => {
     const toggle = screen.getByRole('button', { name: 'Hide navigation' });
     expect(toggle).toHaveAttribute('aria-expanded', 'true');
     expect(screen.getByRole('link', { name: 'Summary' })).toHaveFocus();
-    for (const label of ['Home', 'About', 'Skills', 'Experience', 'Education', 'Social', 'Summary']) {
+    for (const label of ['Profile', 'About', 'Skills', 'Experience', 'Education', 'Social', 'Summary']) {
       fireEvent.click(screen.getByRole('link', { name: label }));
       expect(screen.getByRole('link', { name: label })).toHaveAttribute('aria-current', 'page');
       expect(screen.getByRole('navigation')).toBeVisible();
@@ -93,11 +93,11 @@ describe('portfolio slideshow', () => {
     expect(screen.getByRole('heading', { name: 'Education' })).toBeInTheDocument();
   });
 
-  it('starts with CV Summary and opens the profile through Home', () => {
+  it('starts with CV Summary and opens the profile through Profile', () => {
     const { container } = renderWithNavigation();
     expect(screen.getByRole('heading', { name: 'CV Summary', level: 1 })).toBeInTheDocument();
-    expect([...container.querySelectorAll('.arc-navigation a')].map((link) => link.getAttribute('aria-label'))).toEqual(['Summary', 'Home', 'About', 'Skills', 'Experience', 'Education', 'Social']);
-    fireEvent.click(screen.getByRole('link', { name: 'Home' }));
+    expect([...container.querySelectorAll('.arc-navigation a')].map((link) => link.getAttribute('aria-label'))).toEqual(['Summary', 'Profile', 'About', 'Skills', 'Experience', 'Education', 'Social']);
+    fireEvent.click(screen.getByRole('link', { name: 'Profile' }));
     expect(screen.getByRole('heading', { name: 'John Mark Rosales' })).toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: 'Professional Experience' })).not.toBeInTheDocument();
     expect(container.querySelectorAll('main section')).toHaveLength(1);
@@ -108,7 +108,7 @@ describe('portfolio slideshow', () => {
     const { container } = renderWithNavigation();
     const sections = [
       ['Summary', 'CV Summary', 'clouds', '01'],
-      ['Home', 'John Mark Rosales', 'sunny', '02'],
+      ['Profile', 'John Mark Rosales', 'sunny', '02'],
       ['About', 'Professional Summary', 'clouds', '03'],
       ['Skills', 'Technical Skills', 'autumn', '04'],
       ['Experience', 'Professional Experience', 'winter', '05'],

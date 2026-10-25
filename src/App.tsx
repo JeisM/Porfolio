@@ -14,7 +14,7 @@ import DescriptionOutlined from '@mui/icons-material/DescriptionOutlined';
 import ShareOutlined from '@mui/icons-material/ShareOutlined';
 import DarkModeRounded from '@mui/icons-material/DarkModeRounded';
 import EmailOutlined from '@mui/icons-material/EmailOutlined';
-import HomeRounded from '@mui/icons-material/HomeRounded';
+import PersonRounded from '@mui/icons-material/PersonRounded';
 import LayersRounded from '@mui/icons-material/LayersRounded';
 import LightModeRounded from '@mui/icons-material/LightModeRounded';
 import LocationOnOutlined from '@mui/icons-material/LocationOnOutlined';
@@ -41,7 +41,7 @@ type Mode = 'light' | 'dark';
 
 const nav = [
   ['Summary', 'cv', DescriptionOutlined],
-  ['Home', 'home', HomeRounded],
+  ['Profile', 'home', PersonRounded],
   ['About', 'about', TerminalRounded],
   ['Skills', 'skills', LayersRounded],
   ['Experience', 'experience', WorkOutlineRounded],
