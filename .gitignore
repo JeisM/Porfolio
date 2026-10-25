@@ -5,6 +5,9 @@ node_modules/
 dist/
 dist-ssr/
 
+# Local design previews
+/design-previews/
+
 # Test output
 coverage/
 
