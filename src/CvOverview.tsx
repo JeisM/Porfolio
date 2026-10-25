@@ -1,8 +1,13 @@
 import { portfolio } from './portfolio';
+import { Avatar } from '@mui/material';
+import { SkillChip } from './SkillChip';
 
 function Profile() {
   return <header className="cv-profile">
-    <div><h2>{portfolio.name}</h2><p>{portfolio.title}</p></div>
+    <div className="cv-identity">
+      <Avatar className="cv-avatar profile-mark" src="/john-mark-rosales.jpg" alt="John Mark Rosales at a waterfall" />
+      <div><h2>{portfolio.name}</h2><p>{portfolio.title}</p></div>
+    </div>
     <address><span>{portfolio.location}</span><a href={`tel:${portfolio.phone}`}>{portfolio.phone}</a><a href={`mailto:${portfolio.email}`}>{portfolio.email}</a></address>
   </header>;
 }
@@ -20,7 +25,7 @@ function Project({ project }: { project: typeof portfolio.projects[number] }) {
 }
 
 function SkillGroup({ group }: { group: typeof portfolio.skills[number] }) {
-  return <div><h3>{group.label}</h3><p>{group.items.join(' · ')}</p></div>;
+  return <div><h3>{group.label}</h3><div className="cv-skill-list">{group.items.map((skill) => <SkillChip key={skill} skill={skill} />)}</div></div>;
 }
 
 function Education() {

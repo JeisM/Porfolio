@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Navigation on demand — interactive design</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; background: #edf2f7; color: #1b3451; font-family: Inter, 'Segoe UI', sans-serif; }
+    main { max-width: 1260px; margin: auto; padding: 32px; }
+    header { display: flex; align-items: end; justify-content: space-between; gap: 28px; margin-bottom: 24px; }
+    .eyebrow { color: #64809a; font-size: 10px; font-weight: 750; letter-spacing: .16em; text-transform: uppercase; }
+    h1 { margin: 9px 0 10px; font-size: clamp(26px, 3.2vw, 38px); line-height: 1.15; font-weight: 550; letter-spacing: -.04em; }
+    header p { max-width: 500px; margin: 0; color: #61778e; font-size: 13px; line-height: 1.65; }
+    .badge { display: inline-flex; gap: 7px; align-items: center; padding: 9px 12px; border-radius: 30px; background: #e0f0e8; color: #31745c; font-size: 11px; white-space: nowrap; }
+    .badge::before { content: ''; width: 5px; height: 5px; background: #4c9d7a; border-radius: 50%; }
+    .controls { display: flex; align-items: center; flex-wrap: wrap; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
+    .control-group { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+    button { font: inherit; cursor: pointer; }
+    .controls button { min-height: 36px; border: 1px solid #cfdce7; border-radius: 10px; background: #f8fafc; padding: 8px 13px; font-size: 11px; color: #536b82; }
+    .controls button[aria-pressed='true'] { color: #164d79; background: #fff; border-color: #8fbad7; box-shadow: 0 2px 7px #244d7210; }
+    button:focus-visible { outline: 2px solid #177cae; outline-offset: 3px; }
+    .canvas { margin: auto; width: 100%; border-radius: 22px; overflow: hidden; background: #c4dcec; box-shadow: 0 20px 60px #163a5d18, 0 0 0 1px #9fb9cf55; }
+    .canvas.phone { width: 390px; border-radius: 27px; }
+    iframe { display: block; width: 100%; height: clamp(460px, 74vh, 780px); border: 0; }
+    .canvas.phone iframe { height: min(740px, 78vh); min-height: 460px; }
+    .notes { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px; margin: 18px 2px 0; color: #647c92; font-size: 11px; line-height: 1.6; }
+    .notes strong { color: #285a7b; font-weight: 650; }
+    #status { min-height: 18px; }
+    footer { margin-top: 22px; padding-top: 15px; border-top: 1px solid #d7e1eb; color: #8192a3; font-size: 10px; }
+    @media (max-width: 600px) {
+      main { padding: 22px 0; }
+      header, .controls, .notes, footer { margin-left: 16px; margin-right: 16px; }
+      header { display: block; }
+      .badge { margin-top: 14px; }
+      .canvas, .canvas.phone { max-width: 100%; border-radius: 0; box-shadow: 0 0 0 1px #9fb9cf55; }
+      iframe, .canvas.phone iframe { height: 72vh; min-height: 420px; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <div>
+        <div class="eyebrow">Interactive concept / 02</div>
+        <h1>Navigation, on demand.</h1>
+        <p>A small glass button keeps every section within reach. Hide the navigation to give your photo, experience, and skills more room.</p>
+      </div>
+      <span class="badge">Design preview</span>
+    </header>
+    <div class="controls" aria-label="Preview controls">
+      <div class="control-group" aria-label="Navigation state">
+        <button type="button" id="focus-view" aria-pressed="true">Focus view</button>
+        <button type="button" id="navigation-view" aria-pressed="false">Navigation open</button>
+      </div>
+      <div class="control-group" aria-label="Preview size and theme">
+        <button type="button" id="desktop-view" aria-pressed="true">Desktop</button>
+        <button type="button" id="phone-view" aria-pressed="false">Phone</button>
+        <button type="button" id="theme-view">Switch theme</button>
+      </div>
+    </div>
+    <div class="canvas" id="canvas">
+      <iframe id="portfolio-preview" title="Interactive portfolio navigation concept" src="/?navigation-concept=toggle#cv"></iframe>
+    </div>
+    <div class="notes">
+      <div><strong id="space-gain">Loading preview…</strong><div id="status" role="status" aria-live="polite"></div></div>
+      <div>Choose a section to return to focus view.<br>Escape closes the navigation. Previous / Next stays available.</div>
+    </div>
+    <footer>Separate design mockup · Your app's navigation has not been changed.</footer>
+  </main>
+  <script>
+    const frame = document.getElementById('portfolio-preview');
+    const canvas = document.getElementById('canvas');
+    const focusView = document.getElementById('focus-view');
+    const navigationView = document.getElementById('navigation-view');
+    const desktopView = document.getElementById('desktop-view');
+    const phoneView = document.getElementById('phone-view');
+    const themeView = document.getElementById('theme-view');
+    const status = document.getElementById('status');
+    const gain = document.getElementById('space-gain');
+    let collapsed = true;
+    let shell;
+    let nav;
+    let toggle;
+    let resizeObserver;
+    let modeObserver;
+
+    function syncLabel() {
+      if (!toggle) return;
+      const name = nav.querySelector('[aria-current="page"]')?.getAttribute('aria-label') || 'Summary';
+      toggle.querySelector('.toggle-text').textContent = collapsed ? 'Sections' : 'Hide sections';
+      const current = toggle.querySelector('.toggle-current');
+      current.textContent = name;
+      current.hidden = !collapsed;
+      toggle.setAttribute('aria-expanded', String(!collapsed));
+      toggle.setAttribute('aria-label', collapsed ? `Show navigation, current section ${name}` : 'Hide navigation');
+      themeView.textContent = frame.contentDocument.documentElement.dataset.colorMode === 'dark' ? 'Try light mode' : 'Try dark mode';
+    }
+
+    function measureSpace() {
+      if (!shell || !nav) return;
+      const region = shell.querySelector('.slide-enter');
+      shell.dataset.previewNavigation = 'open';
+      nav.hidden = false;
+      const openHeight = region.clientHeight;
+      shell.dataset.previewNavigation = 'closed';
+      nav.hidden = true;
+      const closedHeight = region.clientHeight;
+      shell.dataset.previewNavigation = collapsed ? 'closed' : 'open';
+      nav.hidden = collapsed;
+      nav.inert = collapsed;
+      gain.textContent = `+${Math.max(0, closedHeight - openHeight)}px of reading space in focus view`;
+    }
+
+    function setCollapsed(value, restoreFocus = false, animate = true) {
+      collapsed = value;
+      focusView.setAttribute('aria-pressed', String(collapsed));
+      navigationView.setAttribute('aria-pressed', String(!collapsed));
+      if (!shell) return;
+      shell.dataset.previewNavigation = collapsed ? 'closed' : 'open';
+      nav.hidden = collapsed;
+      nav.inert = collapsed;
+      syncLabel();
+      measureSpace();
+      status.textContent = collapsed ? 'Focus view: navigation tucked away.' : 'Navigation open: choose any glass icon.';
+      if (restoreFocus) toggle.focus({ preventScroll: true });
+      else if (!collapsed) nav.querySelector('[aria-current="page"]')?.focus({ preventScroll: true });
+      if (animate && !frame.contentWindow.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        shell.querySelector('.content').animate([{ opacity: .85, transform: 'translateY(6px)' }, { opacity: 1, transform: 'translateY(0)' }], { duration: 220, easing: 'ease-out' });
+      }
+    }
+
+    function preparePreview() {
+      const doc = frame.contentDocument;
+      shell = doc.querySelector('.site-shell');
+      nav = doc.querySelector('.arc-navigation');
+      if (!shell || !nav) return;
+      resizeObserver?.disconnect();
+      modeObserver?.disconnect();
+      doc.getElementById('navigation-concept-styles')?.remove();
+      doc.getElementById('navigation-concept-toggle')?.remove();
+      nav.id = 'portfolio-concept-navigation';
+      const style = doc.createElement('style');
+      style.id = 'navigation-concept-styles';
+      style.textContent = `
+        .site-shell[data-preview-navigation='closed'] { padding-top: 58px; }
+        .site-shell[data-preview-navigation='closed'] .arc-navigation { display: none; }
+        .preview-toggle { position: absolute; z-index: 8; top: 12px; left: 18px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 34px; max-width: calc(100% - 90px); padding: 0 12px; border: 1px solid rgba(255,255,255,.85); border-radius: 999px; background: linear-gradient(140deg, rgba(255,255,255,.75), rgba(197,231,255,.48)); color: #164467; box-shadow: inset 0 1px 1px rgba(255,255,255,.95), 0 4px 15px rgba(28,65,102,.13); backdrop-filter: blur(16px) saturate(1.4); -webkit-backdrop-filter: blur(16px) saturate(1.4); font: 650 12px/1.2 Inter, 'Segoe UI', sans-serif; cursor: pointer; }
+        .preview-toggle::before { content: ''; position: absolute; inset: -5px; border-radius: inherit; }
+        .preview-toggle svg { flex: 0 0 auto; width: 16px; height: 16px; }
+        .preview-toggle .toggle-current { padding-left: 8px; border-left: 1px solid rgba(31,88,125,.22); font-size: 11px; font-weight: 500; }
+        .preview-toggle .toggle-current[hidden] { display: none; }
+        .toggle-chevron { width: 13px !important; height: 13px !important; transition: transform .2s; }
+        .preview-toggle[aria-expanded='true'] .toggle-chevron { transform: rotate(180deg); }
+        .preview-toggle:hover { background: rgba(245,252,255,.92); }
+        .preview-toggle:focus-visible { outline: 2px solid #0766b6; outline-offset: 3px; }
+        .mode-dark .preview-toggle { color: #e2f3ff; border-color: rgba(210,239,255,.6); background: linear-gradient(140deg, rgba(158,216,255,.28), rgba(43,82,132,.5)); box-shadow: inset 0 1px 1px rgba(225,246,255,.5), 0 4px 15px rgba(4,18,45,.25); }
+        .mode-dark .preview-toggle .toggle-current { border-color: rgba(210,239,255,.3); }
+        .mode-dark .preview-toggle:hover { background: rgba(77,130,181,.65); }
+        .mode-dark .preview-toggle:focus-visible { outline-color: #a1e8ff; }
+        @media(max-width: 900px) {
+          .site-shell[data-preview-navigation='open'], .site-shell[data-preview-navigation='closed'] { padding-top: 52px; }
+          .preview-toggle { top: 9px; left: 12px; }
+        }
+        @media(max-height: 500px) and (min-width: 480px) and (orientation: landscape) {
+          .site-shell[data-preview-navigation='open'] { padding-top: 6px; }
+          .site-shell[data-preview-navigation='closed'] { padding-top: 46px; }
+          .preview-toggle { top: 7px; left: 12px; }
+          .site-shell[data-preview-navigation='open'] .preview-toggle { width: 32px; min-height: 32px; padding: 0; }
+          .site-shell[data-preview-navigation='open'] .toggle-text,
+          .site-shell[data-preview-navigation='open'] .toggle-current,
+          .site-shell[data-preview-navigation='open'] .toggle-chevron { display: none; }
+        }
+        @media(prefers-reduced-motion: reduce) { .preview-toggle * { transition: none; } }
+      `;
+      doc.head.appendChild(style);
+      toggle = doc.createElement('button');
+      toggle.id = 'navigation-concept-toggle';
+      toggle.className = 'preview-toggle';
+      toggle.type = 'button';
+      toggle.setAttribute('aria-controls', nav.id);
+      toggle.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg><span class="toggle-text">Sections</span><span class="toggle-current">Summary</span><svg class="toggle-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="m7 10 5 5 5-5"/></svg>';
+      toggle.addEventListener('click', () => setCollapsed(!collapsed));
+      shell.appendChild(toggle);
+      nav.addEventListener('click', event => {
+        if (event.target.closest('a')) setTimeout(() => setCollapsed(true, true), 0);
+      });
+      doc.addEventListener('keydown', event => {
+        if (event.key === 'Escape' && !collapsed) { event.preventDefault(); setCollapsed(true, true); }
+      });
+      modeObserver = new MutationObserver(syncLabel);
+      modeObserver.observe(shell, { attributes: true, attributeFilter: ['class', 'aria-current'], subtree: true });
+      modeObserver.observe(doc.documentElement, { attributes: true, attributeFilter: ['data-color-mode'] });
+      const pause = doc.querySelector('button[aria-label="Pause weather animation"]');
+      pause?.click();
+      setCollapsed(collapsed, false, false);
+      resizeObserver = new ResizeObserver(measureSpace);
+      resizeObserver.observe(frame);
+    }
+
+    frame.addEventListener('load', () => {
+      if (frame.contentDocument.querySelector('.site-shell')) preparePreview();
+      else {
+        const ready = new MutationObserver(() => {
+          if (frame.contentDocument.querySelector('.site-shell')) { ready.disconnect(); preparePreview(); }
+        });
+        ready.observe(frame.contentDocument.body, { childList: true, subtree: true });
+      }
+    });
+    focusView.addEventListener('click', () => setCollapsed(true));
+    navigationView.addEventListener('click', () => setCollapsed(false));
+    desktopView.addEventListener('click', () => {
+      canvas.classList.remove('phone'); desktopView.setAttribute('aria-pressed', 'true'); phoneView.setAttribute('aria-pressed', 'false');
+    });
+    phoneView.addEventListener('click', () => {
+      canvas.classList.add('phone'); desktopView.setAttribute('aria-pressed', 'false'); phoneView.setAttribute('aria-pressed', 'true');
+    });
+    themeView.addEventListener('click', () => frame.contentDocument.querySelector('.view-controls button[aria-label^="Switch to"]')?.click());
+  </script>
+</body>
+</html>

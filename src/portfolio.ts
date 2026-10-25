@@ -53,10 +53,16 @@ export const portfolio = {
   ],
 } as const;
 
-// Demonstration profiles, ready to replace with the owner's actual accounts.
-export const socialProfiles = [
-  { platform: 'linkedin', label: 'LinkedIn', handle: 'your-linkedin-username', url: 'https://www.linkedin.com/in/your-linkedin-username/' },
-  { platform: 'facebook', label: 'Facebook', handle: 'your.facebook.username', url: 'https://www.facebook.com/your.facebook.username' },
-  { platform: 'instagram', label: 'Instagram', handle: '@your.instagram.username', url: 'https://www.instagram.com/your.instagram.username/' },
-  { platform: 'twitter', label: 'Twitter / X', handle: '@your_x_username', url: 'https://x.com/your_x_username' },
-] as const;
+export interface SocialProfile {
+  platform: 'linkedin' | 'facebook' | 'instagram' | 'twitter' | 'github';
+  label: string;
+  handle: string;
+  url: string;
+}
+
+// Add only the owner's verified public profiles; unavailable accounts stay hidden.
+export const socialProfiles: readonly SocialProfile[] = [
+  { platform: 'facebook', label: 'Facebook', handle: 'View Facebook profile', url: 'https://www.facebook.com/share/1E6qBPfwAa/' },
+  { platform: 'github', label: 'GitHub', handle: 'JeisM', url: 'https://github.com/JeisM' },
+  { platform: 'linkedin', label: 'LinkedIn', handle: portfolio.name, url: 'https://www.linkedin.com/in/john-rosales-8266b230a' },
+];

@@ -1,7 +1,7 @@
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { App } from './App';
-import { portfolio, socialProfiles } from './portfolio';
+import { portfolio } from './portfolio';
 
 describe('portfolio slideshow', () => {
   const stored = new Map<string, string>();
@@ -73,6 +73,9 @@ describe('portfolio slideshow', () => {
     fireEvent.click(screen.getByRole('link', { name: 'Skills' }));
     expect(screen.getByText('Architecture & APIs')).toBeInTheDocument();
     expect(screen.getByText('Additional Knowledge')).toBeInTheDocument();
+    for (const skill of portfolio.skills.flatMap((group) => [...group.items])) {
+      expect(screen.getByText(skill).closest('.skill-chip')?.querySelector('svg')).toBeInTheDocument();
+    }
     expect(screen.queryByText('Australian Health Insurance')).not.toBeInTheDocument();
   });
 
@@ -198,21 +201,32 @@ describe('portfolio slideshow', () => {
     expect(screen.getByText(portfolio.email)).toBeInTheDocument();
     expect(screen.getByText(portfolio.summary)).toBeInTheDocument();
     for (const project of portfolio.projects) expect(screen.getByText(project.description)).toBeInTheDocument();
-    for (const group of portfolio.skills) expect(screen.getByText(group.items.join(' · '))).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: 'John Mark Rosales at a waterfall' })).toHaveAttribute('src', '/john-mark-rosales.jpg');
+    for (const skill of portfolio.skills.flatMap((group) => [...group.items])) {
+      expect(screen.getByText(skill).closest('.skill-chip')?.querySelector('svg')).toBeInTheDocument();
+    }
     expect(screen.getByText(portfolio.education.degree)).toBeInTheDocument();
     expect(container.querySelectorAll('main section')).toHaveLength(1);
   });
 
-  it('shows clearly labeled example social profiles with safe external links', () => {
+  it('shows supplied social profiles and contact actions without placeholder accounts', () => {
     window.history.replaceState(null, '', '/#social');
     render(<App />);
-    expect(screen.getAllByText('Example profile')).toHaveLength(4);
-    for (const profile of socialProfiles) {
-      const link = screen.getByRole('link', { name: `${profile.label} example profile (opens in a new tab)` });
-      expect(link).toHaveAttribute('href', profile.url);
+    expect(screen.getByRole('link', { name: `Email ${portfolio.email}` })).toHaveAttribute('href', `mailto:${portfolio.email}`);
+    expect(screen.getByRole('link', { name: `Phone ${portfolio.phone}` })).toHaveAttribute('href', `tel:${portfolio.phone}`);
+    const facebook = screen.getByRole('link', { name: 'Facebook (opens in a new tab)' });
+    const github = screen.getByRole('link', { name: 'GitHub (opens in a new tab)' });
+    const linkedin = screen.getByRole('link', { name: 'LinkedIn (opens in a new tab)' });
+    expect(facebook).toHaveAttribute('href', 'https://www.facebook.com/share/1E6qBPfwAa/');
+    expect(github).toHaveAttribute('href', 'https://github.com/JeisM');
+    expect(linkedin).toHaveAttribute('href', 'https://www.linkedin.com/in/john-rosales-8266b230a');
+    for (const link of [facebook, github, linkedin]) {
       expect(link).toHaveAttribute('target', '_blank');
       expect(link).toHaveAttribute('rel', 'noopener noreferrer');
     }
+    expect(screen.queryByText('Example profile')).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /Instagram|Twitter/ })).not.toBeInTheDocument();
+    expect(screen.getByRole('region', { name: 'Social Media' }).querySelectorAll('a')).toHaveLength(5);
     expect(screen.queryByRole('heading', { name: 'CV Summary' })).not.toBeInTheDocument();
   });
 
@@ -225,7 +239,7 @@ describe('portfolio slideshow', () => {
     expect(screen.queryByRole('button', { name: 'Next CV page' })).not.toBeInTheDocument();
     expect(screen.getByText(portfolio.summary)).toBeInTheDocument();
     for (const project of portfolio.projects) expect(screen.getByText(project.description)).toBeInTheDocument();
-    for (const group of portfolio.skills) expect(screen.getByText(group.items.join(' · '))).toBeInTheDocument();
+    for (const skill of portfolio.skills.flatMap((group) => [...group.items])) expect(screen.getByText(skill)).toBeInTheDocument();
     expect(screen.getByText(portfolio.education.degree)).toBeInTheDocument();
   });
 

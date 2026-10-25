@@ -1,9 +1,21 @@
 import { useEffect, useRef, type RefObject } from 'react';
 
-type Swipe = { id: number; x: number; y: number; startedAt: number; axis: 'horizontal' | 'vertical' | null };
+type Swipe = {
+  id: number;
+  x: number;
+  y: number;
+  startedAt: number;
+  axis: 'horizontal' | 'vertical' | null;
+  allowPrevious: boolean;
+  allowNext: boolean;
+};
 
-/** Horizontal touch gestures navigate; vertical gestures stay native for reading. */
-export function useSlideSwipe(scope: RefObject<HTMLDivElement | null>, navigate: (step: -1 | 1) => void) {
+/** Swipe on either axis to navigate, letting long content scroll before changing slides. */
+export function useSlideSwipe(
+  scope: RefObject<HTMLDivElement | null>,
+  content: RefObject<HTMLDivElement | null>,
+  navigate: (step: -1 | 1) => void,
+) {
   const swipe = useRef<Swipe | null>(null);
   const blockedUntil = useRef(0);
 
@@ -16,7 +28,19 @@ export function useSlideSwipe(scope: RefObject<HTMLDivElement | null>, navigate:
         return;
       }
       const touch = event.touches[0];
-      swipe.current = { id: touch.identifier, x: touch.clientX, y: touch.clientY, startedAt: Date.now(), axis: null };
+      const region = content.current;
+      const insideContent = region && event.target instanceof Node && region.contains(event.target);
+      // Capture the boundaries before native scrolling: reaching an edge mid-swipe
+      // must not change the slide the user is still reading.
+      swipe.current = {
+        id: touch.identifier,
+        x: touch.clientX,
+        y: touch.clientY,
+        startedAt: Date.now(),
+        axis: null,
+        allowPrevious: !insideContent || region.scrollTop <= 2,
+        allowNext: !insideContent || region.scrollTop + region.clientHeight >= region.scrollHeight - 2,
+      };
     };
     const move = (event: TouchEvent) => {
       const state = swipe.current;
@@ -30,22 +54,31 @@ export function useSlideSwipe(scope: RefObject<HTMLDivElement | null>, navigate:
         if (x > y * 1.25) state.axis = 'horizontal';
         else if (y > x * 1.1) state.axis = 'vertical';
       }
-      if (state.axis === 'horizontal' && event.cancelable) event.preventDefault();
+      const verticalNavigation = state.axis === 'vertical'
+        && (touch.clientY < state.y ? state.allowNext : state.allowPrevious);
+      if ((state.axis === 'horizontal' || verticalNavigation) && event.cancelable) event.preventDefault();
     };
     const end = (event: TouchEvent) => {
       const state = swipe.current;
       swipe.current = null;
-      if (!state || event.touches.length || state.axis === 'vertical') return;
+      if (!state || event.touches.length) return;
       const touch = Array.from(event.changedTouches).find((item) => item.identifier === state.id);
       if (!touch) return;
       const x = touch.clientX - state.x;
       const y = touch.clientY - state.y;
+      const axis = state.axis ?? (Math.abs(x) > Math.abs(y) * 1.25 ? 'horizontal' : Math.abs(y) > Math.abs(x) * 1.1 ? 'vertical' : null);
+      if (!axis) return;
+      const distance = axis === 'horizontal' ? x : y;
+      const crossDistance = axis === 'horizontal' ? y : x;
+      const threshold = axis === 'horizontal' ? window.innerWidth * .16 : window.innerHeight * .12;
+      const step = distance > 0 ? -1 : 1;
       const now = Date.now();
-      if (Math.abs(x) < Math.min(70, window.innerWidth * 0.16) || Math.abs(x) <= Math.abs(y) * 1.25 || now - state.startedAt > 1200) return;
+      if (Math.abs(distance) < Math.min(70, threshold) || Math.abs(distance) <= Math.abs(crossDistance) * (axis === 'horizontal' ? 1.25 : 1.1) || now - state.startedAt > 1200) return;
+      if (axis === 'vertical' && !(step === 1 ? state.allowNext : state.allowPrevious)) return;
       if (event.cancelable) event.preventDefault();
       if (now < blockedUntil.current) return;
       blockedUntil.current = now + 900;
-      navigate(x > 0 ? -1 : 1);
+      navigate(step);
     };
     const cancel = () => { swipe.current = null; };
     element.addEventListener('touchstart', start, { passive: true });
@@ -58,5 +91,5 @@ export function useSlideSwipe(scope: RefObject<HTMLDivElement | null>, navigate:
       element.removeEventListener('touchend', end);
       element.removeEventListener('touchcancel', cancel);
     };
-  }, [scope, navigate]);
+  }, [scope, content, navigate]);
 }

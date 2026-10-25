@@ -21,37 +21,7 @@ import PhoneOutlined from '@mui/icons-material/PhoneOutlined';
 import SchoolRounded from '@mui/icons-material/SchoolRounded';
 import TerminalRounded from '@mui/icons-material/TerminalRounded';
 import WorkOutlineRounded from '@mui/icons-material/WorkOutlineRounded';
-import type { IconType } from 'react-icons';
-import {
-  SiAngular,
-  SiBootstrap,
-  SiCss,
-  SiEslint,
-  SiExpress,
-  SiFigma,
-  SiFirebase,
-  SiGit,
-  SiGraphql,
-  SiHtml5,
-  SiJavascript,
-  SiJest,
-  SiJquery,
-  SiMongodb,
-  SiNextdotjs,
-  SiNodedotjs,
-  SiNpm,
-  SiPrettier,
-  SiPython,
-  SiReact,
-  SiRedux,
-  SiSass,
-  SiStorybook,
-  SiTailwindcss,
-  SiTypescript,
-  SiVite,
-  SiVuedotjs,
-  SiWebpack,
-} from 'react-icons/si';
+import { SkillChip } from './SkillChip';
 import {
   Avatar,
   Button,
@@ -64,6 +34,7 @@ import {
   createTheme,
 } from '@mui/material';
 import { portfolio } from './portfolio';
+import { navigationTokens } from './navigationTheme';
 
 type Mode = 'light' | 'dark';
 
@@ -76,42 +47,6 @@ const nav = [
   ['Education', 'education', SchoolRounded],
   ['Social', 'social', ShareOutlined],
 ] as const;
-
-const skillIcons: Record<string, IconType> = {
-  'JavaScript (ES6+)': SiJavascript,
-  TypeScript: SiTypescript,
-  HTML5: SiHtml5,
-  CSS3: SiCss,
-  React: SiReact,
-  'Next.js': SiNextdotjs,
-  Angular: SiAngular,
-  jQuery: SiJquery,
-  'Tailwind CSS': SiTailwindcss,
-  Bootstrap: SiBootstrap,
-  SASS: SiSass,
-  Redux: SiRedux,
-  GraphQL: SiGraphql,
-  Jest: SiJest,
-  Storybook: SiStorybook,
-  ESLint: SiEslint,
-  Prettier: SiPrettier,
-  Git: SiGit,
-  Webpack: SiWebpack,
-  Vite: SiVite,
-  npm: SiNpm,
-  Figma: SiFigma,
-  'Node.js': SiNodedotjs,
-  'Express.js': SiExpress,
-  Python: SiPython,
-  MongoDB: SiMongodb,
-  Firebase: SiFirebase,
-  'Vue.js': SiVuedotjs,
-};
-
-function SkillChip({ skill }: { skill: string }) {
-  const Icon = skillIcons[skill];
-  return <Chip icon={Icon ? <Icon aria-hidden="true" /> : undefined} label={skill} size="small" />;
-}
 
 function getInitialMode(): Mode {
   try {
@@ -184,7 +119,10 @@ export function App() {
       text: { primary: mode === 'dark' ? '#eef6ff' : '#071b61', secondary: mode === 'dark' ? '#c6d8f3' : '#435ba0' },
     },
     typography: { fontFamily: 'Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif' },
-    components: { MuiButton: { styleOverrides: { root: { textTransform: 'none', fontWeight: 700, borderRadius: 999, minHeight: 44 } } } },
+    components: {
+      MuiButton: { styleOverrides: { root: { textTransform: 'none', fontWeight: 700, borderRadius: 999, minHeight: 44 } } },
+      MuiCssBaseline: { styleOverrides: { '.arc-navigation': navigationTokens[mode] } },
+    },
   }), [mode]);
 
   useEffect(() => {
@@ -244,7 +182,7 @@ export function App() {
     selectSection(nav[next][1], step > 0 ? 'next' : 'previous');
   }, [activeIndex, selectSection]);
   useSlideWheel(shellRef, contentRef, moveSlide);
-  useSlideSwipe(shellRef, moveSlide);
+  useSlideSwipe(shellRef, contentRef, moveSlide);
   const summaryBreak = portfolio.summary.indexOf('. ') + 1;
 
   return (
@@ -262,6 +200,15 @@ export function App() {
         </div>
 
         <nav className="arc-navigation" aria-label="Portfolio sections" style={{ '--nav-count': nav.length } as CSSProperties}>
+          <svg className="nav-paint" width="0" height="0" aria-hidden="true" focusable="false">
+            <defs>
+              <linearGradient id="portfolio-navigation-ink" x1="0" y1="0" x2=".7" y2="1">
+                <stop offset="0" stopColor="var(--nav-ink-top)" />
+                <stop offset=".45" stopColor="var(--nav-ink-middle)" />
+                <stop offset="1" stopColor="var(--nav-ink-bottom)" />
+              </linearGradient>
+            </defs>
+          </svg>
           {nav.map(([label, id, Icon], index) => {
             const slot = (index - activeIndex + nav.length + Math.floor(nav.length / 2)) % nav.length;
             const position = (slot + 0.5) / nav.length;
@@ -271,7 +218,7 @@ export function App() {
                 aria-current={activeSection === id ? 'page' : undefined}
                 aria-label={label}
                 data-distance={distance}
-                style={{ '--nav-x': `${position * 100}%`, '--nav-distance': distance, '--nav-icon-scale': [2.3, 1.55, 1, 0.7][distance], '--nav-label-scale': [1.5, 1.12, 0.98, 0.84][distance] } as CSSProperties}
+                style={{ '--nav-x': `${position * 100}%`, '--nav-distance': distance, '--nav-icon-scale': [1, .82, .72, .67][distance], '--nav-label-scale': [1.2, 1.05, 1, .95][distance] } as CSSProperties}
                 onClick={(event) => { event.preventDefault(); selectSection(id); }}
                 onKeyDown={(event) => {
                   let next = index;
@@ -284,7 +231,8 @@ export function App() {
                   selectSection(nav[next][1], event.key === 'ArrowLeft' ? 'previous' : event.key === 'ArrowRight' ? 'next' : undefined);
                   event.currentTarget.parentElement?.querySelector<HTMLAnchorElement>(`a[href="#${nav[next][1]}"]`)?.focus();
                 }}>
-                <Icon aria-hidden="true" /><span className={id === 'experience' ? 'nav-label-full' : undefined}>{label}</span>
+                <span className="nav-icon" aria-hidden="true"><Icon /></span>
+                <span className={id === 'experience' ? 'nav-label-full' : undefined}>{label}</span>
                 {id === 'experience' && <span className="nav-label-short" aria-hidden="true">Work</span>}
               </a>
             );
